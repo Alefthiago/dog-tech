@@ -2,7 +2,7 @@ import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+    return twMerge(clsx(inputs))
 }
 
 
@@ -30,4 +30,14 @@ export function validaCnpj(cnpj: string) {
     const dv2 = calcDV(cnpj, 13);
 
     return dv1 === Number(cnpj[12]) && dv2 === Number(cnpj[13]);
+}
+
+export function hasValue(v: any) {
+    return (
+        v !== undefined &&
+        v !== null &&
+        v !== "" &&
+        v !== "-" &&
+        !(typeof v === "object" && Object.keys(v).length === 0)
+    );
 }
