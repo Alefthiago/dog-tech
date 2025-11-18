@@ -92,8 +92,8 @@ export default function FichaCnpj() {
                                         onCopy={copyField}
                                         copiedValue={copied}
                                     />
-                                    <ReadOnlyField label="Simples Nacional" value={empresa.simples.simples} onCopy={copyField} copiedValue={copied} />
-                                    <ReadOnlyField label="MEI" value={empresa.simples.mei} onCopy={copyField} copiedValue={copied} />
+                                    <ReadOnlyField label="Simples Nacional" value={empresa.simples?.simples} onCopy={copyField} copiedValue={copied} />
+                                    <ReadOnlyField label="MEI" value={empresa.simples?.mei} onCopy={copyField} copiedValue={copied} />
                                 </FieldGroup>
                             </FieldSet>
                         </AccordionContent>
