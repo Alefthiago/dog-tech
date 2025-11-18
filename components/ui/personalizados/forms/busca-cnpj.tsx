@@ -1,11 +1,10 @@
 'use client'
-import {
-    SearchIcon,
-} from "lucide-react";
+import { SearchIcon } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import {
     InputGroup,
     InputGroupAddon,
+    InputGroupButton, // Certifique-se que este componente suporta type="submit" ou onClick manual
     InputGroupInput,
 } from "@/components/ui/input-group";
 import {
@@ -18,14 +17,17 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-
 import { useState } from "react";
 import { validaCnpj } from "@/lib/utils";
 
+interface BuscaCnpjProps {
+    setEmpresa: (data: any) => void;
+    setLoading: (loading: boolean) => void;
+}
 
-export default function BuscaCnpj() {
+export default function BuscaCnpj({ setEmpresa, setLoading }: BuscaCnpjProps) {
     const [cnpj, setCnpj] = useState("");
-    const [loadForm, setLoadForm] = useState(false);
+    const [internalLoading, setInternalLoading] = useState(false);
 
     const [open, setOpen] = useState(false);
     const [formMsg, setFormMsg] = useState("");
@@ -35,24 +37,15 @@ export default function BuscaCnpj() {
         setFormMsg(msg);
         setFormTitulo(titulo);
         setOpen(true);
-    }
+    };
 
     const maskCnpj = (v: string) => {
         v = v.replace(/\D/g, "");
         v = v.slice(0, 14);
-
-        if (v.length >= 3)
-            v = v.replace(/^(\d{2})(\d)/, "$1.$2");
-
-        if (v.length >= 6)
-            v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
-
-        if (v.length >= 9)
-            v = v.replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3/$4");
-
-        if (v.length >= 13)
-            v = v.replace(/(\d{4})(\d{2})$/, "$1-$2");
-
+        if (v.length >= 3) v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+        if (v.length >= 6) v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+        if (v.length >= 9) v = v.replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3/$4");
+        if (v.length >= 13) v = v.replace(/(\d{4})(\d{2})$/, "$1-$2");
         return v;
     };
 
@@ -66,42 +59,45 @@ export default function BuscaCnpj() {
 
     const formSubmit = async (e: any) => {
         e.preventDefault();
-        setLoadForm(true);
+
+        setInternalLoading(true);
+        setLoading(true);
+        setEmpresa(null);
+
         try {
             if (!validaCnpj(cnpj)) {
                 formAlert('Alerta', 'CNPJ inválido, verifique o campo e tente novamente');
-                setLoadForm(false);
+                setInternalLoading(false);
+                setLoading(false);
                 return false;
             }
 
-            const consulta = await fetch(`https://publica.cnpj.ws/cnpj/${cnpj.replace(/\D/g, "")}`, {
+            const cleanCnpj = cnpj.replace(/\D/g, "");
+            const consulta = await fetch(`https://publica.cnpj.ws/cnpj/${cleanCnpj}`, {
                 method: 'GET'
             });
 
             if (!consulta.ok) {
                 const contentType = consulta.headers.get('content-type');
                 if (contentType && contentType.includes('application/json')) {
-                    const erro: {
-                        status: number;
-                        titulo: string;
-                        detalhes: string;
-                        validacao: []
-                    } = await consulta.json();
-                    formAlert(erro.titulo, erro.detalhes)
-                    console.error(erro);
+                    const erro = await consulta.json();
+                    formAlert(erro.titulo || 'Erro', erro.detalhes || 'Erro ao consultar CNPJ');
                 } else {
-                    const erroText = await consulta.text();
-                    formAlert('Erro', 'Houve um erro inpesrado, verifique o console para detalhes');
-                    console.error(erroText);
+                    formAlert('Erro', 'Houve um erro inesperado (status ' + consulta.status + ')');
                 }
-
-                setLoadForm(false);
-                return false;
+                setEmpresa(null);
+            } else {
+                const resultado = await consulta.json();
+                setEmpresa(resultado);
             }
 
-
         } catch (e) {
-            
+            console.error(e);
+            formAlert('Erro de Conexão', 'Não foi possível conectar à API.');
+            setEmpresa(null);
+        } finally {
+            setInternalLoading(false);
+            setLoading(false);
         }
     };
 
@@ -117,20 +113,18 @@ export default function BuscaCnpj() {
                         onChange={changeForm}
                         onBlur={eventoBlur}
                         maxLength={18}
-                        disabled={loadForm}
+                        disabled={internalLoading}
                     />
                     <InputGroupAddon>
-                        {loadForm ?
-                            <Spinner />
-                            :
-                            <SearchIcon />
-                        }
+                        <InputGroupButton type="submit" disabled={internalLoading} className={`hover:cursor-pointer`}>
+                            {internalLoading ? <Spinner /> : <SearchIcon />}
+                        </InputGroupButton>
                     </InputGroupAddon>
                 </InputGroup>
             </form>
 
             <AlertDialog open={open} onOpenChange={setOpen}>
-                <AlertDialogContent className="border-orange-300 border-3">
+                <AlertDialogContent className="border-orange-300 border-l-4">
                     <AlertDialogHeader>
                         <AlertDialogTitle>{formTitulo}</AlertDialogTitle>
                         <AlertDialogDescription>
@@ -142,6 +136,11 @@ export default function BuscaCnpj() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            <span className="text-xs text-muted-foreground mt-2 block">
+                Informações obtidas através da API <a href="https://developers.receitaws.com.br/" target="_blank" rel="noopener noreferrer" className="underline">receitaws</a> / public.cnpj.ws. <br />
+                Verifique sempre a situação na SEFAZ.
+            </span>
         </>
     );
 }
