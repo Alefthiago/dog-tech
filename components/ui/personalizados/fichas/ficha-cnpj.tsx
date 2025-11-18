@@ -33,6 +33,7 @@ export default function FichaCnpj() {
     };
 
     const [empresa, setEmpresa] = useState<any>(null);
+    
     const [loading, setLoading] = useState(false);
     const estab = empresa?.estabelecimento;
 
