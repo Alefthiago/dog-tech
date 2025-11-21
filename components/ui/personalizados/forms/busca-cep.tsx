@@ -21,19 +21,19 @@ import {
 //     /COMPONENTES.        //
 
 //      UTIL.       //
-import { validaCnpj } from "@/lib/utils";
 import { useState } from "react";
+import { validarCEP } from "@/lib/utils";
 //     /UTIL.       //
 
-interface BuscaCnpjProps {
-    setEmpresa: (data: any) => void;
+interface BuscaCepProps {
+    setLocalidade: (data: any) => void;
     setLoading: (loading: boolean) => void;
 }
 
-export default function BuscaCnpj({ setEmpresa, setLoading }: BuscaCnpjProps) {
+export default function BuscaCep({ setLocalidade, setLoading }: BuscaCepProps) {
 
     //      ESTADOS.        //
-    const [cnpj, setCnpj] = useState("");
+    const [cep, setCep] = useState("");
     const [formLoad, setFormLoad] = useState(false);
 
     const [open, setOpen] = useState(false);
@@ -48,22 +48,21 @@ export default function BuscaCnpj({ setEmpresa, setLoading }: BuscaCnpjProps) {
         setOpen(true);
     };
 
-    const maskCnpj = (v: string) => {
-        v = v.replace(/\D/g, "");
-        v = v.slice(0, 14);
-        if (v.length >= 3) v = v.replace(/^(\d{2})(\d)/, "$1.$2");
-        if (v.length >= 6) v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
-        if (v.length >= 9) v = v.replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3/$4");
-        if (v.length >= 13) v = v.replace(/(\d{4})(\d{2})$/, "$1-$2");
+    const maskCep = (v: string) => {
+        v = v.replace(/\D/g, "");   // remove tudo que não é número
+        v = v.slice(0, 8);          // limita a 8 dígitos
+        if (v.length > 5) {
+            v = v.replace(/^(\d{5})(\d)/, "$1-$2"); // aplica máscara 00000-000
+        }
         return v;
     };
 
-    const changeForm = (e: any) => {
-        setCnpj(maskCnpj(e.target.value));
+    const eventoBlur = (e: any) => {
+        setCep(maskCep(e.target.value.trim()));
     };
 
-    const eventoBlur = (e: any) => {
-        setCnpj(maskCnpj(e.target.value.trim()));
+    const changeForm = (e: any) => {
+        setCep(maskCep(e.target.value.trim()));
     };
 
     const formSubmit = async (e: any) => {
@@ -71,19 +70,19 @@ export default function BuscaCnpj({ setEmpresa, setLoading }: BuscaCnpjProps) {
 
         setFormLoad(true);
         setLoading(true);
-        setEmpresa(null);
+        setLocalidade(null);
 
         try {
-            if (!validaCnpj(cnpj)) {
-                formAlert('Alerta', 'CNPJ inválido, verifique o campo e tente novamente.');
+            if (!validarCEP(cep)) {
+                formAlert('Alerta', 'CEP inválido, verifique o campo e tente novamente.');
 
                 setFormLoad(false);
                 setLoading(false);
                 return false;
             }
 
-            const cnpjLimpo = cnpj.replace(/\D/g, "");
-            const consulta = await fetch(`https://publica.cnpj.ws/cnpj/${cnpjLimpo}`, {
+            const cepLimpo = cep.replace(/\D/g, "");
+            const consulta = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`, {
                 method: 'GET'
             });
 
@@ -91,16 +90,14 @@ export default function BuscaCnpj({ setEmpresa, setLoading }: BuscaCnpjProps) {
                 const contentType = consulta.headers.get('content-type');
 
                 let erro = null;
-                let erroMsg;
+                let erroMsg = 'Erro';
                 let erroDados;
 
                 if (contentType && contentType.includes('application/json')) {
                     erro = await consulta.json();
-                    erroMsg = erro.titulo || 'Erro';
-                    erroDados = erro.detalhes || 'Erro ao consultar CNPJ.';
+                    erroDados = erro.message || 'Erro ao consultar Cep.';
                 } else {
                     erro = await consulta.text();
-                    erroMsg = 'Erro';
                     erroDados = 'Houve um erro inesperado, verifique o console para mais informações.';
                 }
                 console.error(erro);
@@ -112,8 +109,8 @@ export default function BuscaCnpj({ setEmpresa, setLoading }: BuscaCnpjProps) {
             }
 
             const resultado = await consulta.json();
-            setEmpresa(resultado);
-            
+            setLocalidade(resultado);
+
             setFormLoad(false);
             setLoading(false);
             return true;
@@ -134,16 +131,16 @@ export default function BuscaCnpj({ setEmpresa, setLoading }: BuscaCnpjProps) {
 
     return (
         <>
-            <form id="form-cnpj" onSubmit={formSubmit}>
+            <form id="form-cep" onSubmit={formSubmit}>
                 <InputGroup>
                     <InputGroupInput
-                        id="cnpjInput"
-                        name="cnpjInput"
-                        placeholder="Digite o CNPJ"
-                        value={cnpj}
+                        id="cepInput"
+                        name="cepInput"
+                        placeholder="Digite o CEP"
+                        value={cep}
                         onChange={changeForm}
                         onBlur={eventoBlur}
-                        maxLength={18}
+                        maxLength={9}
                         disabled={formLoad}
                     />
                     <InputGroupAddon>
@@ -169,9 +166,9 @@ export default function BuscaCnpj({ setEmpresa, setLoading }: BuscaCnpjProps) {
             </AlertDialog>
 
             <span className="text-xs text-muted-foreground mt-2 block">
-                Dados obtidos via API <a href="https://docs.cnpj.ws/referencia-de-api/api-publica/consultando-cnpj" target="_blank" rel="noopener noreferrer" className="underline">CNPJws</a> (limite de três requisições por minuto).
+                Dados obtidos via API <a href="https://viacep.com.br/" target="_blank" rel="noopener noreferrer" className="underline">ViaCep</a>.
                 <br />
-                Algumas informações podem estar desatualizadas. Em caso de dúvida, consulte a situação cadastral diretamente na SEFAZ.
+                A geolocalização dos CEPs estão suscetíveis a erros.
             </span>
 
         </>

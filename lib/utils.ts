@@ -31,6 +31,9 @@ export function validaCnpj(cnpj: string) {
 
     return dv1 === Number(cnpj[12]) && dv2 === Number(cnpj[13]);
 }
+export function validarCEP(cep: string) {
+    return /^\d{5}-?\d{3}$/.test(cep);
+}
 
 export function hasValue(v: any) {
     return (

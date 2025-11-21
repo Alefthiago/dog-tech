@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import BuscaCnpj from "@/components/ui/personalizados/forms/busca-cnpj";
 import {
     Field,
@@ -33,7 +33,7 @@ export default function FichaCnpj() {
     };
 
     const [empresa, setEmpresa] = useState<any>(null);
-    
+
     const [loading, setLoading] = useState(false);
     const estab = empresa?.estabelecimento;
 
@@ -402,8 +402,15 @@ export default function FichaCnpj() {
 
 function ReadOnlyField({ label, value, onCopy, copiedValue, span = 1 }: any) {
     const displayValue = value || "-";
+    const spanClasses: Record<number, string> = {
+        1: "col-span-1",
+        2: "col-span-2",
+        3: "col-span-3",
+        4: "col-span-4",
+    };
+
     return (
-        <Field className={`col-span-${span}`}>
+        <Field className={spanClasses[span] ?? "col-span-1"}>
             <FieldLabel>{label}</FieldLabel>
             <InputGroup>
                 <InputGroupInput value={displayValue} readOnly />
