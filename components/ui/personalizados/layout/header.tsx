@@ -13,6 +13,8 @@ export default function HeaderCustom() {
         routeNome = "Consulta de CNPJ";
     } else if (routeNome === "consultaCep") {
         routeNome = "Consulta de CEP";
+    } else {
+        routeNome = '';
     }
 
     return (

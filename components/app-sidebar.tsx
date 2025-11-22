@@ -2,12 +2,8 @@
 
 import * as React from "react"
 import {
-  AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
   Frame,
-  GalleryVerticalEnd,
+  ShoppingBag,
   PieChart,
   Building2,
   Map,
@@ -24,38 +20,21 @@ import {
 } from "@/components/ui/sidebar"
 
 const data = {
-  user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
-  },
-  teams: [
-    {
-      name: "Acme Inc",
-      logo: GalleryVerticalEnd,
-      plan: "Enterprise",
-    },
-    {
-      name: "Acme Corp.",
-      logo: AudioWaveform,
-      plan: "Startup",
-    },
-    {
-      name: "Evil Corp.",
-      logo: Command,
-      plan: "Free",
-    },
-  ],
   navMain: [
     {
       title: "CNPJ",
       url: "consultaCnpj",
-      icon: Building2 
+      icon: Building2
     },
     {
       title: "CEP",
       url: "consultaCep",
       icon: Map
+    },
+    {
+      title: "NCM",
+      url: "consultaNcm",
+      icon: ShoppingBag
     },
   ],
   projects: [
