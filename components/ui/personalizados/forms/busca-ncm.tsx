@@ -22,18 +22,17 @@ import {
 
 //      UTIL.       //
 import { useState } from "react";
-import { validarCEP } from "@/lib/utils";
 //     /UTIL.       //
 
-interface BuscaCepProps {
-    setLocalidade: (data: any) => void;
+interface BuscaNcmProps {
+    setNcm: (data: any) => void;
     setLoading: (loading: boolean) => void;
 }
 
-export default function BuscaCep({ setLocalidade, setLoading }: BuscaCepProps) {
+export default function BuscaNcm({ setNcm, setLoading }: BuscaNcmProps) {
 
     //      ESTADOS.        //
-    const [cep, setCep] = useState("");
+    const [codigo, setCodigo] = useState("");
     const [formLoad, setFormLoad] = useState(false);
 
     const [open, setOpen] = useState(false);
@@ -47,58 +46,57 @@ export default function BuscaCep({ setLocalidade, setLoading }: BuscaCepProps) {
         setFormTitulo(titulo);
         setOpen(true);
     };
-    
-    const maskCep = (v: string) => {
-        v = v.replace(/\D/g, "");
-        v = v.slice(0, 8);
-        v = v.replace(/^(\d{5})(\d)/, "$1-$2");
-        return v;
+
+    const maskNcm = (value: string) => {
+        return value
+            .replace(/\D/g, "")
+            .slice(0, 8)
+            .replace(/^(\d{4})(\d)/, "$1.$2")
+            .replace(/^(\d{4})\.(\d{2})(\d)/, "$1.$2.$3");
     };
 
     const eventoBlur = (e: any) => {
-        setCep(maskCep(e.target.value.trim()));
+        setCodigo(e.target.value.trim());
     };
 
     const changeForm = (e: any) => {
-        setCep(maskCep(e.target.value.trim()));
+        setCodigo(maskNcm(e.target.value));
     };
 
     const formSubmit = async (e: any) => {
         e.preventDefault();
 
+        const ncmLimpo = codigo.replace(/\D/g, "");
+
+        if (ncmLimpo.length !== 8) {
+            formAlert("Formato Inválido", "O código NCM deve conter 8 dígitos.");
+            return;
+        }
+
         setFormLoad(true);
         setLoading(true);
-        setLocalidade(null);
+        setNcm(null);
 
         try {
-            if (!validarCEP(cep)) {
-                formAlert('Alerta', 'CEP inválido, verifique o campo e tente novamente.');
-
-                setFormLoad(false);
-                setLoading(false);
-                return false;
-            }
-
-            const cepLimpo = cep.replace(/\D/g, "");
-            const consulta = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`, {
+            const consulta = await fetch(`https://brasilapi.com.br/api/ncm/v1/${ncmLimpo}`, {
                 method: 'GET'
             });
 
             if (!consulta.ok) {
                 const contentType = consulta.headers.get('content-type');
 
-                let erro = null;
                 let erroMsg = 'Erro';
-                let erroDados;
+                let erroDados = 'Houve um erro inesperado.';
 
                 if (contentType && contentType.includes('application/json')) {
-                    erro = await consulta.json();
-                    erroDados = erro.message || 'Erro ao consultar Cep.';
+                    const erro = await consulta.json();
+                    erroMsg = 'Erro na busca'; 
+                    erroDados = 'Código NCM não encontrado ou inválido.';
                 } else {
-                    erro = await consulta.text();
-                    erroDados = 'Houve um erro inesperado, verifique o console para mais informações.';
+                    erroDados = 'Houve um erro de conexão com a API.';
                 }
-                console.error(erro);
+                
+                console.error("Erro API:", erroDados);
                 formAlert(erroMsg, erroDados);
 
                 setFormLoad(false);
@@ -107,7 +105,7 @@ export default function BuscaCep({ setLocalidade, setLoading }: BuscaCepProps) {
             }
 
             const resultado = await consulta.json();
-            setLocalidade(resultado);
+            setNcm(resultado);
 
             setFormLoad(false);
             setLoading(false);
@@ -116,9 +114,9 @@ export default function BuscaCep({ setLocalidade, setLoading }: BuscaCepProps) {
             console.error(e);
 
             e instanceof TypeError && e.message === 'Failed to fetch' ?
-                formAlert('Erro de Conexão', 'Não foi possível conectar ao servidor. Verifique sua internet ou tente novamente.') // ERROS DE REDE
+                formAlert('Erro de Conexão', 'Não foi possível conectar ao servidor. Verifique sua internet ou tente novamente.') 
                 :
-                formAlert('Erro', 'Houve um erro inesperado, verifique o console para mais informações.');
+                formAlert('Erro', 'Houve um erro inesperado ao processar sua solicitação.');
 
             setFormLoad(false);
             setLoading(false);
@@ -129,16 +127,16 @@ export default function BuscaCep({ setLocalidade, setLoading }: BuscaCepProps) {
 
     return (
         <>
-            <form id="form-cep" onSubmit={formSubmit}>
+            <form id="form-ncm" onSubmit={formSubmit}>
                 <InputGroup>
                     <InputGroupInput
-                        id="cepInput"
-                        name="cepInput"
-                        placeholder="Digite o CEP"
-                        value={cep}
+                        id="ncmInput"
+                        name="ncmInput"
+                        placeholder="Digite o NCM"
+                        value={codigo}
                         onChange={changeForm}
                         onBlur={eventoBlur}
-                        maxLength={9}
+                        maxLength={10}
                         disabled={formLoad}
                     />
                     <InputGroupAddon>
@@ -164,11 +162,10 @@ export default function BuscaCep({ setLocalidade, setLoading }: BuscaCepProps) {
             </AlertDialog>
 
             <span className="text-xs text-muted-foreground mt-2 block">
-                Dados obtidos via API <a href="https://viacep.com.br/" target="_blank" rel="noopener noreferrer" className="underline">ViaCep</a>.
+                Dados obtidos via <a href="https://brasilapi.com.br/docs#tag/NCM/paths/~1ncm~1v1~1%7Bcode%7D/get" target="_blank" rel="noopener noreferrer" className="underline">BrasilAPI</a>.
                 <br />
-                A geolocalização dos CEPs estão suscetíveis a erros.
+                Certifique-se de que o código possui 8 dígitos.
             </span>
-
         </>
     );
 }
