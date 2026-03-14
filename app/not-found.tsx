@@ -14,7 +14,7 @@ export default function Custom404() {
                         Erro 404
                     </p>
 
-                    <h1 className="mt-3 text-4xl font-extrabold md:text-5xl">
+                    <h1 className="mt-3 text-4xl a font-extrabold md:text-5xl">
                         Página não encontrada
                     </h1>
 
